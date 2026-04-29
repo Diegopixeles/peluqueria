@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
         zip \
         unzip \
         default-mysql-client \
+        dos2unix \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
         pdo \
@@ -40,7 +41,9 @@ COPY . .
 # Entrypoint: ajusta el puerto de Apache y ejecuta el init SQL
 # ─────────────────────────────────────────────────────────────
 COPY docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
+# dos2unix convierte los saltos de línea CRLF (Windows) a LF (Linux)
+# sin esto el script falla con "bad interpreter" en el contenedor
+RUN dos2unix /usr/local/bin/entrypoint.sh && chmod +x /usr/local/bin/entrypoint.sh
 
 # Railway asigna el puerto dinámicamente via $PORT
 EXPOSE 80
