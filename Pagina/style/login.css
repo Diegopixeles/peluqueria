@@ -1,0 +1,95 @@
+/* =============================================================
+   ARCHIVO: login.css
+   DESCRIPCIÓN: Estilos personalizados para la página de login.
+                Complementa a Tailwind CSS con elementos que no
+                se pueden lograr solo con clases de utilidad,
+                como el fondo degradado y los círculos decorativos
+                animados del fondo.
+   ============================================================= */
+
+/* ---- Importar la fuente Inter desde Google Fonts ---- */
+/* Se usa la variación de peso 300 (light) a 700 (bold) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+/* Aplicar la fuente a todo el documento */
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+/* ---- Fondo de la página de login ---- */
+/* Degradado diagonal de gris muy oscuro a gris oscuro */
+.bg-login {
+    background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+    position: relative;
+    /* Necesario para que los círculos se posicionen dentro */
+    overflow: hidden;
+    /* Evita que los círculos salgan del viewport */
+}
+
+/* ---- Círculo decorativo 1 (arriba a la derecha) ---- */
+/* Gran círculo borroso de color ámbar que da profundidad al fondo */
+.circle-1 {
+    position: absolute;
+    /* Posicionado respecto al .bg-login */
+    top: -10rem;
+    /* Sale un poco por arriba */
+    right: -10rem;
+    /* Sale un poco por la derecha */
+    width: 35rem;
+    /* Tamaño del círculo */
+    height: 35rem;
+    border-radius: 50%;
+    /* Lo hace perfectamente circular */
+
+    /* Color del círculo: ámbar muy traslúcido */
+    background: radial-gradient(circle, rgba(245, 158, 11, 0.15) 0%, transparent 70%);
+
+    /* Animación: pulso lento para hacer el fondo más vivo */
+    animation: pulse-circle 8s ease-in-out infinite;
+
+    /* Asegura que quede detrás del formulario */
+    pointer-events: none;
+    /* No interfiere con los clics del usuario */
+    z-index: 0;
+}
+
+/* ---- Círculo decorativo 2 (abajo a la izquierda) ---- */
+/* Segundo círculo más pequeño en la esquina opuesta */
+.circle-2 {
+    position: absolute;
+    bottom: -8rem;
+    /* Sale un poco por abajo */
+    left: -8rem;
+    /* Sale un poco por la izquierda */
+    width: 28rem;
+    height: 28rem;
+    border-radius: 50%;
+
+    /* Color ligeramente diferente para crear contraste sutil */
+    background: radial-gradient(circle, rgba(245, 158, 11, 0.08) 0%, transparent 70%);
+
+    /* Misma animación pero con un retraso para que no sean síncronos */
+    animation: pulse-circle 8s ease-in-out 2s infinite;
+
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ---- Animación de pulso para los círculos ---- */
+/* Los círculos se expanden y contraen suavemente */
+@keyframes pulse-circle {
+
+    0%,
+    100% {
+        transform: scale(1);
+        /* Tamaño normal */
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.1);
+        /* Se expande un 10% */
+        opacity: 0.7;
+        /* Se vuelve un poco más transparente */
+    }
+}

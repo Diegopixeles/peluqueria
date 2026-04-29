@@ -1,0 +1,185 @@
+-- BASE DE DATOS
+
+CREATE DATABASE IF NOT EXISTS peluqueria
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_general_ci;
+USE peluqueria;
+
+-- ======================
+-- TABLAS PRINCIPALES
+
+
+CREATE TABLE clientes (
+  id_cliente        BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  nombre            VARCHAR(120) NOT NULL,
+  apellidos         VARCHAR(160) NOT NULL,
+  telefono          VARCHAR(20)  NOT NULL,
+  correo            VARCHAR(160) NULL,
+  fecha_alta        DATE NOT NULL DEFAULT (CURRENT_DATE),
+  observaciones     TEXT NULL,
+  UNIQUE (telefono),
+  UNIQUE (correo)
+) ENGINE=InnoDB;
+
+CREATE TABLE empleados (
+  id_empleado       BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  nombre            VARCHAR(120) NOT NULL,
+  apellidos         VARCHAR(160) NOT NULL,
+  telefono          VARCHAR(20)  NOT NULL,
+  correo            VARCHAR(160) NULL,
+  puesto            ENUM('peluquero','barbero','esteticista','recepcion','gerencia') NOT NULL,
+  activo            TINYINT(1) NOT NULL DEFAULT 1,
+  UNIQUE (telefono),
+  UNIQUE (correo)
+) ENGINE=InnoDB;
+
+CREATE TABLE servicios (
+  id_servicio       BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  nombre            VARCHAR(120) NOT NULL,
+  descripcion       TEXT NULL,
+  precio            DECIMAL(10,2) NOT NULL CHECK (precio >= 0),
+  duracion_minutos  SMALLINT UNSIGNED NOT NULL CHECK (duracion_minutos > 0),
+  activo            TINYINT(1) NOT NULL DEFAULT 1,
+  UNIQUE (nombre)
+) ENGINE=InnoDB;
+
+CREATE TABLE productos (
+  id_producto       BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  nombre            VARCHAR(160) NOT NULL,
+  marca             VARCHAR(120) NULL,
+  codigo_sku        VARCHAR(80)  NULL,
+  precio_venta      DECIMAL(10,2) NOT NULL CHECK (precio_venta >= 0),
+  stock_actual      INT NOT NULL DEFAULT 0 CHECK (stock_actual >= 0),
+  stock_minimo      INT NOT NULL DEFAULT 0 CHECK (stock_minimo >= 0),
+  activo            TINYINT(1) NOT NULL DEFAULT 1,
+  UNIQUE (codigo_sku),
+  INDEX idx_nombre (nombre)
+) ENGINE=InnoDB;
+
+CREATE TABLE horarios (
+  id_horario        BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  id_empleado       BIGINT UNSIGNED NOT NULL,
+  dia_semana        TINYINT UNSIGNED NOT NULL CHECK (dia_semana BETWEEN 1 AND 7), -- 1=Lunes, 7=Domingo
+  hora_inicio       TIME NOT NULL,
+  hora_fin          TIME NOT NULL,
+  CONSTRAINT fk_horarios_empleado FOREIGN KEY (id_empleado) REFERENCES empleados(id_empleado) ON DELETE CASCADE,
+  CONSTRAINT chk_horarios_horas CHECK (hora_inicio < hora_fin),
+  CONSTRAINT uq_horarios_unico UNIQUE (id_empleado, dia_semana, hora_inicio, hora_fin)
+) ENGINE=InnoDB;
+
+CREATE TABLE citas (
+  id_cita           BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  id_cliente        BIGINT UNSIGNED NOT NULL,
+  id_empleado       BIGINT UNSIGNED NOT NULL,
+  fecha             DATE NOT NULL,
+  hora_inicio       TIME NOT NULL,
+  duracion_minutos  INT UNSIGNED NOT NULL DEFAULT 0,
+  hora_fin          TIME AS (ADDTIME(hora_inicio, SEC_TO_TIME(duracion_minutos*60))) STORED,
+  estado            ENUM('pendiente','confirmada','en curso','finalizada','cancelada') NOT NULL DEFAULT 'pendiente',
+  notas             VARCHAR(255) NULL,
+  creado_en         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (id_cliente)  REFERENCES clientes(id_cliente)  ON DELETE RESTRICT,
+  FOREIGN KEY (id_empleado) REFERENCES empleados(id_empleado) ON DELETE RESTRICT,
+  INDEX idx_empleado_fecha (id_empleado, fecha, hora_inicio),
+  INDEX idx_cliente_fecha (id_cliente, fecha)
+) ENGINE=InnoDB;
+
+CREATE TABLE cita_servicio (
+  id_cita_servicio  BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  id_cita           BIGINT UNSIGNED NOT NULL,
+  id_servicio       BIGINT UNSIGNED NOT NULL,
+  precio            DECIMAL(10,2) NOT NULL,
+  duracion_minutos  INT UNSIGNED NOT NULL,
+  FOREIGN KEY (id_cita)     REFERENCES citas(id_cita)     ON DELETE CASCADE,
+  FOREIGN KEY (id_servicio) REFERENCES servicios(id_servicio) ON DELETE RESTRICT,
+  UNIQUE (id_cita, id_servicio)
+) ENGINE=InnoDB;
+
+CREATE TABLE valoraciones (
+  id_valoracion     BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  id_cliente        BIGINT UNSIGNED NOT NULL,
+  id_empleado       BIGINT UNSIGNED NULL,
+  id_servicio       BIGINT UNSIGNED NULL,
+  id_cita           BIGINT UNSIGNED NULL,
+  puntuacion        TINYINT UNSIGNED NOT NULL CHECK (puntuacion BETWEEN 1 AND 5),
+  comentario        VARCHAR(500) NULL,
+  fecha_creacion    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (id_cliente)  REFERENCES clientes(id_cliente)  ON DELETE CASCADE,
+  FOREIGN KEY (id_empleado) REFERENCES empleados(id_empleado) ON DELETE SET NULL,
+  FOREIGN KEY (id_servicio) REFERENCES servicios(id_servicio) ON DELETE SET NULL,
+  FOREIGN KEY (id_cita)     REFERENCES citas(id_cita)     ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+-- ======================
+-- TRIGGERS (disparadores)
+
+DELIMITER $$
+
+CREATE TRIGGER trg_cita_servicio_insertar
+BEFORE INSERT ON cita_servicio
+FOR EACH ROW
+BEGIN
+  DECLARE v_precio DECIMAL(10,2);
+  DECLARE v_duracion INT;
+  SELECT precio, duracion_minutos INTO v_precio, v_duracion
+  FROM servicios WHERE id_servicio = NEW.id_servicio AND activo=1;
+
+  IF v_precio IS NULL THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Servicio no válido o inactivo';
+  END IF;
+
+  SET NEW.precio = v_precio;
+  SET NEW.duracion_minutos = v_duracion;
+END$$
+
+CREATE TRIGGER trg_actualizar_duracion_cita
+AFTER INSERT ON cita_servicio
+FOR EACH ROW
+BEGIN
+  UPDATE citas c
+  SET c.duracion_minutos = (
+    SELECT IFNULL(SUM(cs.duracion_minutos),0) FROM cita_servicio cs WHERE cs.id_cita = c.id_cita
+  )
+  WHERE c.id_cita = NEW.id_cita;
+END$$
+
+DELIMITER ;
+
+-- ======================
+-- VISTA RESUMEN
+
+CREATE OR REPLACE VIEW vista_citas_resumen AS
+SELECT
+  c.id_cita,
+  c.fecha,
+  c.hora_inicio,
+  c.hora_fin,
+  c.estado,
+  cli.nombre AS cliente,
+  CONCAT(emp.nombre, ' ', emp.apellidos) AS empleado,
+  (SELECT IFNULL(SUM(cs.precio),0) FROM cita_servicio cs WHERE cs.id_cita=c.id_cita) AS total
+FROM citas c
+JOIN clientes cli ON cli.id_cliente = c.id_cliente
+JOIN empleados emp ON emp.id_empleado = c.id_empleado;
+
+-- ======================
+-- DATOS DE EJEMPLO
+
+INSERT INTO clientes (nombre, apellidos, telefono, correo)
+VALUES ('Ana','García López','600000001','ana@gmail.com'),
+       ('Luis','Pérez Díaz','600000002','luis@gmail.com');
+
+INSERT INTO empleados (nombre, apellidos, telefono, correo, puesto)
+VALUES ('Marta','Ruiz','611111111','marta@peluqueria.es','peluquero'),
+       ('Guillermo','Diaz','622222222','guillermo@peluqueria.es','barbero');
+
+INSERT INTO servicios (nombre, descripcion, precio, duracion_minutos)
+VALUES ('Corte mujer','Corte y peinado',18.00,45),
+       ('Corte hombre','Corte clásico o moderno',12.00,30),
+       ('Tinte','Tinte de cabello',25.00,60),
+       ('Barba','Arreglo y contorno',8.00,20);
+
+INSERT INTO productos (nombre, marca, codigo_sku, precio_venta, stock_actual, stock_minimo)
+VALUES ('Champú nutritivo 500ml','MarcaX','SKU-CH-500',9.90,20,5),
+       ('Mascarilla hidratante 250ml','MarcaX','SKU-MA-250',12.50,15,5);

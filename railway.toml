@@ -1,0 +1,10 @@
+[build]
+  # Railway usará este Dockerfile para construir la imagen
+  dockerfilePath = "docker/php/Dockerfile"
+
+[deploy]
+  # Railway verifica que el servicio está vivo con esta ruta
+  healthcheckPath    = "/Pagina/index.php"
+  healthcheckTimeout = 60
+  # Reinicia automáticamente si el contenedor falla
+  restartPolicyType  = "ON_FAILURE"

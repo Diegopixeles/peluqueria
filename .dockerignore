@@ -1,0 +1,8 @@
+# No incluir en la imagen Docker estos archivos/carpetas
+.env
+.gitignore
+.dockerignore
+docker/mysql/data/
+*.log
+*.md
+Recursos/

@@ -1,0 +1,8 @@
+# Variables de entorno (contienen contraseñas)
+.env
+
+# Datos persistentes de Docker
+docker/mysql/data/
+
+# Logs
+*.log

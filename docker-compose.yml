@@ -1,0 +1,86 @@
+version: "3.9"
+
+services:
+
+  # ──────────────────────────────────────────
+  # SERVICIO WEB: PHP 8.2 + Apache
+  # ──────────────────────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: peluqueria_web
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8080}:80"       # Accede en http://localhost:8080
+    volumes:
+      - .:/var/www/html              # Monta todo el proyecto en el servidor web
+    environment:
+      DB_HOST: db
+      DB_NAME: ${DB_NAME:-peluqueria}
+      DB_USER: ${DB_USER:-root}
+      DB_PASS: ${DB_PASS:-}
+    depends_on:
+      db:
+        condition: service_healthy   # Espera a que MySQL esté listo antes de arrancar
+    networks:
+      - peluqueria_net
+
+  # ──────────────────────────────────────────
+  # SERVICIO BASE DE DATOS: MySQL 8.0
+  # ──────────────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: peluqueria_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE:      ${DB_NAME:-peluqueria}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASS:-rootpassword}
+      MYSQL_USER:          ${DB_USER:-peluqueria_user}
+      MYSQL_PASSWORD:      ${DB_PASS:-peluqueria_pass}
+    ports:
+      - "${DB_PORT:-3306}:3306"      # Puerto externo para conectarte con HeidiSQL / DBeaver
+    volumes:
+      - db_data:/var/lib/mysql                                  # Datos persistentes
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro      # SQL que se carga al crear la BD
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/custom.cnf:ro  # Configuración personalizada
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASS:-rootpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - peluqueria_net
+
+  # ──────────────────────────────────────────
+  # SERVICIO phpMyAdmin (acceso visual a la BD)
+  # ──────────────────────────────────────────
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: peluqueria_phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "${PMA_PORT:-8081}:80"       # Accede en http://localhost:8081
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: ${DB_ROOT_PASS:-rootpassword}
+      UPLOAD_LIMIT: 64M
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - peluqueria_net
+
+# ──────────────────────────────────────────
+# VOLÚMENES Y REDES
+# ──────────────────────────────────────────
+volumes:
+  db_data:
+    driver: local
+
+networks:
+  peluqueria_net:
+    driver: bridge
