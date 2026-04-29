@@ -1,16 +1,19 @@
 FROM php:8.2-apache
 
 # ─────────────────────────────────────────────────────────────
-# Instalar extensiones PHP + cliente MySQL (para el entrypoint)
+# Instalar dependencias
+# --no-install-recommends evita paquetes extra que pueden
+# activar módulos de Apache adicionales (causa del MPM conflict)
 # ─────────────────────────────────────────────────────────────
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
         libpng-dev \
         libjpeg-dev \
         libfreetype6-dev \
         zip \
         unzip \
-        default-mysql-client \
+        mariadb-client \
         dos2unix \
+        netcat-openbsd \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
         pdo \
@@ -20,11 +23,12 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # ─────────────────────────────────────────────────────────────
-# Configurar módulos de Apache
-# - mpm_prefork es el único compatible con mod_php
-# - desactivar mpm_event/worker para evitar "More than one MPM loaded"
+# Configurar Apache MPM
+# Eliminar TODOS los enlaces mpm_* y dejar solo mpm_prefork
+# (único compatible con mod_php)
 # ─────────────────────────────────────────────────────────────
-RUN a2dismod mpm_event mpm_worker 2>/dev/null || true \
+RUN find /etc/apache2/mods-enabled/ -name 'mpm_*.load' -delete \
+    && find /etc/apache2/mods-enabled/ -name 'mpm_*.conf' -delete \
     && a2enmod mpm_prefork rewrite
 
 # ─────────────────────────────────────────────────────────────
@@ -34,21 +38,16 @@ COPY docker/php/vhost.conf /etc/apache2/sites-available/000-default.conf
 COPY docker/php/php.ini    /usr/local/etc/php/conf.d/custom.ini
 
 # ─────────────────────────────────────────────────────────────
-# Copiar el código fuente del proyecto
-# (En local se monta como volumen; en Railway se copia aquí)
+# Copiar código fuente del proyecto
 # ─────────────────────────────────────────────────────────────
 WORKDIR /var/www/html
 COPY . .
 
 # ─────────────────────────────────────────────────────────────
-# Entrypoint: ajusta el puerto de Apache y ejecuta el init SQL
+# Entrypoint: gestiona puerto dinámico + init BD en background
 # ─────────────────────────────────────────────────────────────
 COPY docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
-# dos2unix convierte los saltos de línea CRLF (Windows) a LF (Linux)
-# sin esto el script falla con "bad interpreter" en el contenedor
 RUN dos2unix /usr/local/bin/entrypoint.sh && chmod +x /usr/local/bin/entrypoint.sh
 
-# Railway asigna el puerto dinámicamente via $PORT
 EXPOSE 80
-
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
