@@ -20,9 +20,12 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # ─────────────────────────────────────────────────────────────
-# Habilitar mod_rewrite de Apache
+# Configurar módulos de Apache
+# - mpm_prefork es el único compatible con mod_php
+# - desactivar mpm_event/worker para evitar "More than one MPM loaded"
 # ─────────────────────────────────────────────────────────────
-RUN a2enmod rewrite
+RUN a2dismod mpm_event mpm_worker 2>/dev/null || true \
+    && a2enmod mpm_prefork rewrite
 
 # ─────────────────────────────────────────────────────────────
 # Copiar configuración de Apache y PHP
