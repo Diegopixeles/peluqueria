@@ -17,9 +17,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gd \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# ✅ Fix MPM: deshabilitar event y worker, dejar solo prefork
+# ✅ Fix MPM: eliminar físicamente event/worker y dejar SOLO prefork
 RUN a2dismod mpm_event mpm_worker 2>/dev/null || true \
-    && a2enmod mpm_prefork rewrite
+    && a2enmod mpm_prefork rewrite \
+    && rm -f /etc/apache2/mods-enabled/mpm_event.conf \
+             /etc/apache2/mods-enabled/mpm_event.load \
+             /etc/apache2/mods-enabled/mpm_worker.conf \
+             /etc/apache2/mods-enabled/mpm_worker.load
 
 COPY docker/php/vhost.conf /etc/apache2/sites-available/000-default.conf
 COPY docker/php/php.ini    /usr/local/etc/php/conf.d/custom.ini
