@@ -17,7 +17,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gd \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN a2enmod rewrite
+RUN a2dismod mpm_event mpm_worker 2>/dev/null || true \
+    && a2enmod mpm_prefork rewrite
 
 COPY docker/php/vhost.conf /etc/apache2/sites-available/000-default.conf
 COPY docker/php/php.ini    /usr/local/etc/php/conf.d/custom.ini
