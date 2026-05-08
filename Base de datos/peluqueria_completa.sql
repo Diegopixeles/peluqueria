@@ -8,7 +8,6 @@
 -- =============================================================
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
-START TRANSACTION;
 SET time_zone = "+00:00";
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
@@ -35,13 +34,13 @@ USE `peluqueria`;
 -- ------------------------------------------------------------
 -- Tabla: clientes
 -- ------------------------------------------------------------
-CREATE TABLE `clientes` (
+CREATE TABLE IF NOT EXISTS `clientes` (
   `id_cliente`    BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   `nombre`        VARCHAR(120) NOT NULL,
   `apellidos`     VARCHAR(160) NOT NULL,
   `telefono`      VARCHAR(20)  NOT NULL,
   `correo`        VARCHAR(160) DEFAULT NULL,
-  `fecha_alta`    DATE NOT NULL DEFAULT curdate(),
+  `fecha_alta`    DATE NOT NULL,
   `observaciones` TEXT DEFAULT NULL,
   PRIMARY KEY (`id_cliente`),
   UNIQUE KEY `uq_telefono` (`telefono`),
@@ -51,7 +50,7 @@ CREATE TABLE `clientes` (
 -- ------------------------------------------------------------
 -- Tabla: empleados
 -- ------------------------------------------------------------
-CREATE TABLE `empleados` (
+CREATE TABLE IF NOT EXISTS `empleados` (
   `id_empleado` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   `nombre`      VARCHAR(120) NOT NULL,
   `apellidos`   VARCHAR(160) NOT NULL,
@@ -67,7 +66,7 @@ CREATE TABLE `empleados` (
 -- ------------------------------------------------------------
 -- Tabla: servicios
 -- ------------------------------------------------------------
-CREATE TABLE `servicios` (
+CREATE TABLE IF NOT EXISTS `servicios` (
   `id_servicio`      BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   `nombre`           VARCHAR(120) NOT NULL,
   `descripcion`      TEXT DEFAULT NULL,
@@ -81,7 +80,7 @@ CREATE TABLE `servicios` (
 -- ------------------------------------------------------------
 -- Tabla: productos
 -- ------------------------------------------------------------
-CREATE TABLE `productos` (
+CREATE TABLE IF NOT EXISTS `productos` (
   `id_producto`  BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   `nombre`       VARCHAR(160) NOT NULL,
   `marca`        VARCHAR(120) DEFAULT NULL,
@@ -98,7 +97,7 @@ CREATE TABLE `productos` (
 -- ------------------------------------------------------------
 -- Tabla: horarios
 -- ------------------------------------------------------------
-CREATE TABLE `horarios` (
+CREATE TABLE IF NOT EXISTS `horarios` (
   `id_horario`  BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   `id_empleado` BIGINT(20) UNSIGNED NOT NULL,
   `dia_semana`  TINYINT(3) UNSIGNED NOT NULL CHECK (`dia_semana` BETWEEN 1 AND 7), -- 1=Lunes, 7=Domingo
@@ -112,7 +111,7 @@ CREATE TABLE `horarios` (
 -- ------------------------------------------------------------
 -- Tabla: citas
 -- ------------------------------------------------------------
-CREATE TABLE `citas` (
+CREATE TABLE IF NOT EXISTS `citas` (
   `id_cita`          BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   `id_cliente`       BIGINT(20) UNSIGNED NOT NULL,
   `id_empleado`      BIGINT(20) UNSIGNED NOT NULL,
@@ -134,7 +133,7 @@ CREATE TABLE `citas` (
 -- ------------------------------------------------------------
 -- Tabla: cita_servicio  (relación N:M entre citas y servicios)
 -- ------------------------------------------------------------
-CREATE TABLE `cita_servicio` (
+CREATE TABLE IF NOT EXISTS `cita_servicio` (
   `id_cita_servicio` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   `id_cita`          BIGINT(20) UNSIGNED NOT NULL,
   `id_servicio`      BIGINT(20) UNSIGNED NOT NULL,
@@ -150,7 +149,7 @@ CREATE TABLE `cita_servicio` (
 -- ------------------------------------------------------------
 -- Tabla: valoraciones
 -- ------------------------------------------------------------
-CREATE TABLE `valoraciones` (
+CREATE TABLE IF NOT EXISTS `valoraciones` (
   `id_valoracion`  BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
   `id_cliente`     BIGINT(20) UNSIGNED NOT NULL,
   `id_empleado`    BIGINT(20) UNSIGNED DEFAULT NULL,
@@ -173,7 +172,7 @@ CREATE TABLE `valoraciones` (
 -- ------------------------------------------------------------
 -- Tabla: reservas_web  (reservas desde la web pública)
 -- ------------------------------------------------------------
-CREATE TABLE `reservas_web` (
+CREATE TABLE IF NOT EXISTS `reservas_web` (
   `id_reserva`     BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `nombre`         VARCHAR(160) NOT NULL,
   `email`          VARCHAR(160) NOT NULL,
@@ -196,7 +195,7 @@ CREATE TABLE `reservas_web` (
 -- ------------------------------------------------------------
 -- Tabla: usuarios  (acceso al panel de administración)
 -- ------------------------------------------------------------
-CREATE TABLE `usuarios` (
+CREATE TABLE IF NOT EXISTS `usuarios` (
   `id_usuario`    INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `nombre`        VARCHAR(120) NOT NULL,
   `email`         VARCHAR(160) NOT NULL,
@@ -215,6 +214,7 @@ CREATE TABLE `usuarios` (
 
 DELIMITER $$
 
+DROP TRIGGER IF EXISTS `trg_cita_servicio_insertar`$$
 -- Copia el precio y duración del servicio al insertar en cita_servicio
 CREATE TRIGGER `trg_cita_servicio_insertar`
 BEFORE INSERT ON `cita_servicio`
@@ -235,6 +235,7 @@ BEGIN
   SET NEW.duracion_minutos = v_duracion;
 END$$
 
+DROP TRIGGER IF EXISTS `trg_actualizar_duracion_cita`$$
 -- Recalcula la duración total de la cita al añadir un servicio
 CREATE TRIGGER `trg_actualizar_duracion_cita`
 AFTER INSERT ON `cita_servicio`
@@ -278,39 +279,38 @@ JOIN empleados emp ON emp.id_empleado = c.id_empleado;
 -- =============================================================
 
 -- Clientes de prueba
-INSERT INTO `clientes` (`nombre`, `apellidos`, `telefono`, `correo`) VALUES
-('Ana',  'García López', '600000001', 'ana@gmail.com'),
-('Luis', 'Pérez Díaz',   '600000002', 'luis@gmail.com');
+INSERT IGNORE INTO `clientes` (`nombre`, `apellidos`, `telefono`, `correo`, `fecha_alta`) VALUES
+('Ana',  'García López', '600000001', 'ana@gmail.com',  '2026-01-01'),
+('Luis', 'Pérez Díaz',   '600000002', 'luis@gmail.com', '2026-01-01');
 
 -- Empleados de prueba
-INSERT INTO `empleados` (`nombre`, `apellidos`, `telefono`, `correo`, `puesto`) VALUES
+INSERT IGNORE INTO `empleados` (`nombre`, `apellidos`, `telefono`, `correo`, `puesto`) VALUES
 ('Marta',     'Ruiz',  '611111111', 'marta@peluqueria.es',     'peluquero'),
 ('Guillermo', 'Diaz',  '622222222', 'guillermo@peluqueria.es', 'barbero');
 
 -- Catálogo de servicios
-INSERT INTO `servicios` (`nombre`, `descripcion`, `precio`, `duracion_minutos`) VALUES
-('Corte mujer',  'Corte y peinado',        18.00, 45),
-('Corte hombre', 'Corte clásico o moderno',12.00, 30),
-('Tinte',        'Tinte de cabello',        25.00, 60),
-('Barba',        'Arreglo y contorno',       8.00, 20);
+INSERT IGNORE INTO `servicios` (`nombre`, `descripcion`, `precio`, `duracion_minutos`) VALUES
+('Corte mujer',  'Corte y peinado',         18.00, 45),
+('Corte hombre', 'Corte clásico o moderno', 12.00, 30),
+('Tinte',        'Tinte de cabello',         25.00, 60),
+('Barba',        'Arreglo y contorno',        8.00, 20);
 
 -- Productos de venta
-INSERT INTO `productos` (`nombre`, `marca`, `codigo_sku`, `precio_venta`, `stock_actual`, `stock_minimo`) VALUES
-('Champú nutritivo 500ml',     'MarcaX', 'SKU-CH-500',  9.90, 20, 5),
-('Mascarilla hidratante 250ml','MarcaX', 'SKU-MA-250', 12.50, 15, 5);
+INSERT IGNORE INTO `productos` (`nombre`, `marca`, `codigo_sku`, `precio_venta`, `stock_actual`, `stock_minimo`) VALUES
+('Champú nutritivo 500ml',      'MarcaX', 'SKU-CH-500',  9.90, 20, 5),
+('Mascarilla hidratante 250ml', 'MarcaX', 'SKU-MA-250', 12.50, 15, 5);
 
 -- Usuario administrador del panel
 -- Email:      admin@peluqueria.es
 -- Contraseña: Admin1234!
 -- (hash generado con password_hash('Admin1234!', PASSWORD_BCRYPT))
-INSERT INTO `usuarios` (`nombre`, `email`, `password_hash`, `rol`) VALUES
+INSERT IGNORE INTO `usuarios` (`nombre`, `email`, `password_hash`, `rol`) VALUES
 ('Administrador', 'admin@peluqueria.es',
  '$2y$10$YqntfKA4vrAtpBQ8jFjnVOLEc/iLpZPyu3WsbaGk8S9c512tfRhPG',
  'admin');
 
 
 -- =============================================================
-COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
