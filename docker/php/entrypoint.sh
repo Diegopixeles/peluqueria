@@ -8,6 +8,7 @@ APACHE_PORT="${PORT:-8080}"
 echo "[entrypoint] Configurando Apache en el puerto ${APACHE_PORT}..."
 echo "Listen ${APACHE_PORT}" > /etc/apache2/ports.conf
 sed -i "s/<VirtualHost *:[0-9]>/<VirtualHost:${APACHE_PORT}>/" /etc/apache2/sites-available/000-default.conf
+sed -i "s|DocumentRoot /var/www/html$|DocumentRoot /var/www/html/Pagina|" /etc/apache2/sites-available/000-default.conf
 
 echo "ServerName peluqueria-production-f4f5.up.railway.app" >> /etc/apache2/apache2.conf
 echo "UseCanonicalName Off" >> /etc/apache2/apache2.conf
@@ -48,7 +49,7 @@ echo "UseCanonicalName Off" >> /etc/apache2/apache2.conf
         mysql -h "${DB_HOST}" -P "${DB_PORT}" -u "${DB_USER}" -p"${DB_PASS}" --ssl-mode=DISABLED "${DB_NAME}" \
             < /var/www/html/docker/mysql/init/railway_init.sql \
             && echo "[db-init] ✅ Esquema importado correctamente." \
-            || echo "[db-init] ❌ Error al importar el esquema."
+            || { mysql -h "${DB_HOST}" -P "${DB_PORT}" -u "${DB_USER}" -p"${DB_PASS}" --ssl-mode=DISABLED "${DB_NAME}" < /var/www/html/docker/mysql/init/railway_init.sql 2>&1; echo "[db-init] ❌ Error al importar el esquema."; }
     else
         echo "[db-init] ✅ BD ya tiene ${TABLE_COUNT} tabla(s). Saltando importación."
     fi
