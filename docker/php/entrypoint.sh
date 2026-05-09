@@ -7,9 +7,10 @@ set -e
 APACHE_PORT="${PORT:-80}"
 echo "[entrypoint] Configurando Apache en el puerto ${APACHE_PORT}..."
 sed -i "s/Listen 80/Listen ${APACHE_PORT}/" /etc/apache2/ports.conf
-sed -i "s/<VirtualHost \*:80>/<VirtualHost *:${APACHE_PORT}>/" /etc/apache2/sites-available/000-default.conf
+sed -i "s/<VirtualHost *:80>/<VirtualHost *:${APACHE_PORT}>/" /etc/apache2/sites-available/000-default.conf
 
-
+echo "ServerName peluqueria-production-f4f5.up.railway.app" >> /etc/apache2/apache2.conf
+echo "UseCanonicalName Off" >> /etc/apache2/apache2.conf
 # ─────────────────────────────────────────────────────────────
 # PASO 2: Init de BD en SEGUNDO PLANO (no bloquea Apache)
 # ─────────────────────────────────────────────────────────────
