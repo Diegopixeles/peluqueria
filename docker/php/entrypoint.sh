@@ -39,13 +39,13 @@ echo "UseCanonicalName Off" >> /etc/apache2/apache2.conf
     echo "[db-init] ✅ Puerto MySQL accesible. Esperando que el servidor esté listo..."
     sleep 5
 
-    TABLE_COUNT=$(mysql -h "${DB_HOST}" -P "${DB_PORT}" -u "${DB_USER}" -p"${DB_PASS}" "${DB_NAME}" \
+    TABLE_COUNT=$(mysql -h "${DB_HOST}" -P "${DB_PORT}" -u "${DB_USER}" -p"${DB_PASS}" --ssl-mode=DISABLED "${DB_NAME}" \
         -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='${DB_NAME}';" \
         --skip-column-names 2>/dev/null || echo "0")
 
     if [ "${TABLE_COUNT}" -eq 0 ]; then
         echo "[db-init] 🗄️  Importando esquema SQL..."
-        mysql -h "${DB_HOST}" -P "${DB_PORT}" -u "${DB_USER}" -p"${DB_PASS}" "${DB_NAME}" \
+        mysql -h "${DB_HOST}" -P "${DB_PORT}" -u "${DB_USER}" -p"${DB_PASS}" --ssl-mode=DISABLED "${DB_NAME}" \
             < /var/www/html/docker/mysql/init/railway_init.sql \
             && echo "[db-init] ✅ Esquema importado correctamente." \
             || echo "[db-init] ❌ Error al importar el esquema."
@@ -54,10 +54,6 @@ echo "UseCanonicalName Off" >> /etc/apache2/apache2.conf
     fi
 ) &
 
-echo "[debug] Contenido de /var/www/html:"
-ls -la /var/www/html/
-echo "[debug] Contenido de /var/www/html/Pagina:"
-ls -la /var/www/html/Pagina/ 2>/dev/null || echo "[debug] ❌ Carpeta Pagina NO existe"
 
 # ─────────────────────────────────────────────────────────────
 # PASO 3: Arrancar Apache INMEDIATAMENTE
