@@ -7,8 +7,7 @@ set -e
 APACHE_PORT="${PORT:-8080}"
 echo "[entrypoint] Configurando Apache en el puerto ${APACHE_PORT}..."
 echo "Listen ${APACHE_PORT}" > /etc/apache2/ports.conf
-sed -i "s/<VirtualHost *:[0-9]>/<VirtualHost:${APACHE_PORT}>/" /etc/apache2/sites-available/000-default.conf
-sed -i "s|DocumentRoot /var/www/html$|DocumentRoot /var/www/html/Pagina|" /etc/apache2/sites-available/000-default.conf
+sed -i "s/<VirtualHost \*:[0-9]*>/<VirtualHost *:${APACHE_PORT}>/" /etc/apache2/sites-available/000-default.conf
 
 echo "ServerName peluqueria-production-f4f5.up.railway.app" >> /etc/apache2/apache2.conf
 echo "UseCanonicalName Off" >> /etc/apache2/apache2.conf
@@ -40,16 +39,16 @@ echo "UseCanonicalName Off" >> /etc/apache2/apache2.conf
     echo "[db-init] ✅ Puerto MySQL accesible. Esperando que el servidor esté listo..."
     sleep 5
 
-    TABLE_COUNT=$(mysql -h "${DB_HOST}" -P "${DB_PORT}" -u "${DB_USER}" -p"${DB_PASS}" --ssl-mode=DISABLED "${DB_NAME}" \
+    TABLE_COUNT=$(mysql -h "${DB_HOST}" -P "${DB_PORT}" -u "${DB_USER}" -p"${DB_PASS}" --skip-ssl "${DB_NAME}" \
         -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='${DB_NAME}';" \
         --skip-column-names 2>/dev/null || echo "0")
 
     if [ "${TABLE_COUNT}" -eq 0 ]; then
         echo "[db-init] 🗄️  Importando esquema SQL..."
-        mysql -h "${DB_HOST}" -P "${DB_PORT}" -u "${DB_USER}" -p"${DB_PASS}" --ssl-mode=DISABLED "${DB_NAME}" \
+        mysql -h "${DB_HOST}" -P "${DB_PORT}" -u "${DB_USER}" -p"${DB_PASS}" --skip-ssl "${DB_NAME}" \
             < /var/www/html/docker/mysql/init/railway_init.sql \
             && echo "[db-init] ✅ Esquema importado correctamente." \
-            || { mysql -h "${DB_HOST}" -P "${DB_PORT}" -u "${DB_USER}" -p"${DB_PASS}" --ssl-mode=DISABLED "${DB_NAME}" < /var/www/html/docker/mysql/init/railway_init.sql 2>&1; echo "[db-init] ❌ Error al importar el esquema."; }
+            || echo "[db-init] ❌ Error al importar el esquema."
     else
         echo "[db-init] ✅ BD ya tiene ${TABLE_COUNT} tabla(s). Saltando importación."
     fi
