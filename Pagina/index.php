@@ -72,13 +72,13 @@ if (empty($serviciosParaMostrar)) {
                 <a href="#galeria"   class="text-gray-600 hover:text-amber-600 transition duration-150">Galería</a>
                 <a href="#contacto"  class="text-gray-600 hover:text-amber-600 transition duration-150">Contacto</a>
                 <!-- Enlace a la página de reservas en línea -->
-                <a href="../php/reservar.php" class="text-amber-600 hover:text-amber-700 font-semibold transition duration-150">Reservar</a>
+                <a href="/php/reservar.php" class="text-amber-600 hover:text-amber-700 font-semibold transition duration-150">Reservar</a>
                 <!-- Enlace al panel de login -->
-                <a href="../php/login.php" class="text-gray-600 hover:text-amber-600 transition duration-150">Login</a>
+                <a href="/php/login.php" class="text-gray-600 hover:text-amber-600 transition duration-150">Login</a>
             </nav>
 
             <!-- Botón de reserva online (escritorio) -->
-            <a href="../php/reservar.php"
+            <a href="/php/reservar.php"
                class="hidden md:inline-flex items-center px-4 py-2 text-sm font-medium rounded-full text-white bg-amber-500 hover:bg-amber-600 shadow-md transition duration-150">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 Reservar Online
@@ -97,8 +97,8 @@ if (empty($serviciosParaMostrar)) {
                 <a href="#servicios" class="block py-2 px-3 rounded-lg text-gray-600 hover:bg-amber-50 hover:text-amber-600 transition" onclick="cerrarMenu()">Servicios</a>
                 <a href="#galeria"   class="block py-2 px-3 rounded-lg text-gray-600 hover:bg-amber-50 hover:text-amber-600 transition" onclick="cerrarMenu()">Galería</a>
                 <a href="#contacto"  class="block py-2 px-3 rounded-lg text-gray-600 hover:bg-amber-50 hover:text-amber-600 transition" onclick="cerrarMenu()">Contacto</a>
-                <a href="../php/login.php" class="block py-2 px-3 rounded-lg text-gray-600 hover:bg-amber-50 hover:text-amber-600 transition">Login</a>
-                <a href="../php/reservar.php" class="block py-2.5 px-3 rounded-lg text-center font-bold text-white bg-amber-500 hover:bg-amber-600 transition mt-2">Reservar Online</a>
+                <a href="/php/login.php" class="block py-2 px-3 rounded-lg text-gray-600 hover:bg-amber-50 hover:text-amber-600 transition">Login</a>
+                <a href="/php/reservar.php" class="block py-2.5 px-3 rounded-lg text-center font-bold text-white bg-amber-500 hover:bg-amber-600 transition mt-2">Reservar Online</a>
             </div>
         </div>
     </header>
@@ -141,7 +141,7 @@ if (empty($serviciosParaMostrar)) {
             </p>
             <!-- Botones del hero -->
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="../php/reservar.php"
+                <a href="/php/reservar.php"
                    class="inline-flex items-center px-8 py-3 text-lg font-bold rounded-full text-gray-900 bg-amber-400 hover:bg-amber-300 transition duration-300 shadow-xl transform hover:scale-105">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                     Reservar Cita Online
@@ -294,7 +294,7 @@ if (empty($serviciosParaMostrar)) {
         <div class="max-w-4xl mx-auto px-4 sm:px-6 text-center">
             <h2 class="text-4xl font-extrabold text-gray-900 mb-3">¿Listo para tu cambio de look?</h2>
             <p class="text-gray-800 text-lg mb-8">Reserva tu cita online en menos de un minuto. Sin esperas, sin llamadas.</p>
-            <a href="../php/reservar.php"
+            <a href="/php/reservar.php"
                class="inline-flex items-center px-10 py-4 text-lg font-extrabold rounded-full text-amber-500 bg-gray-900 hover:bg-gray-800 transition duration-300 shadow-2xl transform hover:scale-105">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 Reservar mi Cita Ahora

@@ -158,7 +158,7 @@ $servicios = $stmtSrv->fetchAll();
     <nav class="border-b border-gray-700/50 bg-gray-900/80 backdrop-blur sticky top-0 z-50">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex justify-between items-center">
 
-            <a href="/Proyecto/Pagina/index.php" class="flex items-center gap-2 text-white hover:text-amber-400 transition">
+            <a href="/" class="flex items-center gap-2 text-white hover:text-amber-400 transition">
                 <i data-lucide="scissors-square" class="w-6 h-6 text-amber-500"></i>
                 <span class="font-bold text-lg">Peluquería tecnológica</span>
             </a>
@@ -447,7 +447,7 @@ $servicios = $stmtSrv->fetchAll();
                         class="w-full py-3 rounded-xl font-bold text-gray-900 bg-amber-500 hover:bg-amber-400 transition">
                     Hacer otra reserva
                 </button>
-                <a href="/Proyecto/Pagina/index.php" class="block mt-3 text-sm text-gray-500 hover:text-gray-300 transition">
+                <a href="/" class="block mt-3 text-sm text-gray-500 hover:text-gray-300 transition">
                     Volver a la página principal
                 </a>
             </div>

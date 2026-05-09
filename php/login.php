@@ -189,7 +189,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <!-- Enlace para volver al sitio web principal -->
         <div class="text-center mt-8">
-            <a href="/Proyecto/Pagina/index.php" class="inline-flex items-center text-sm text-gray-500 hover:text-white transition">
+            <a href="/" class="inline-flex items-center text-sm text-gray-500 hover:text-white transition">
                 <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i>
                 Volver a la página principal
             </a>

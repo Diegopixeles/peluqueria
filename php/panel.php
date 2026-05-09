@@ -316,7 +316,7 @@ $listaEmpleados = $stmtListaEmpleados->fetchAll();
 
         <!-- Enlace para volver a la página pública -->
         <div class="mt-8 text-center">
-            <a href="/Proyecto/Pagina/index.php"
+            <a href="/"
                class="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 transition">
                 <i data-lucide="arrow-left" class="w-4 h-4 mr-1"></i>
                 Ver página web pública
