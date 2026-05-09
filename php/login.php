@@ -81,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <!-- Framework CSS de utilidades para el diseño -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Hoja de estilos propia del login (fondo, círculos decorativos, etc.) -->
-    <link rel="stylesheet" href="../Pagina/style/login.css">
+    <link rel="stylesheet" href="/style/login.css">
 </head>
 <!-- bg-login y min-h-screen: fondo oscuro a pantalla completa, centrado -->
 <body class="bg-login min-h-screen flex items-center justify-center p-4">
