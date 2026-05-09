@@ -57,4 +57,6 @@ sed -i "s/<VirtualHost \*:80>/<VirtualHost *:${APACHE_PORT}>/" /etc/apache2/site
 # PASO 3: Arrancar Apache INMEDIATAMENTE
 # ─────────────────────────────────────────────────────────────
 echo "[entrypoint] 🚀 Arrancando Apache..."
+a2dismod mpm_event mpm_worker 2>/dev/null || true
+a2enmod mpm_prefork 2>/dev/null || true
 exec apache2-foreground
