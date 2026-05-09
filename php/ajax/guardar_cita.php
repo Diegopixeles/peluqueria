@@ -30,7 +30,7 @@ require_once __DIR__ . '/../lib/PHPMailer/src/SMTP.php';
 define('MAIL_HOST',     'smtp.gmail.com');
 define('MAIL_PORT',     587);
 define('MAIL_USERNAME', 'diegosanmiguelseco2006@gmail.com');        // Cambia esto
-define('MAIL_PASSWORD', 'pral gxip xpkd dggy');        // Contrasena de aplicacion (16 chars)
+define('MAIL_PASSWORD', 'pralgxipxpkddggy');        // Contrasena de aplicacion (16 chars)
 define('MAIL_FROM',     'diegosanmiguelseco2006@gmail.com');        // Mismo que username
 define('MAIL_FROM_NAME','Peluquería tecnológica');
 
