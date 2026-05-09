@@ -54,6 +54,10 @@ echo "UseCanonicalName Off" >> /etc/apache2/apache2.conf
     fi
 ) &
 
+echo "[debug] Contenido de /var/www/html:"
+ls -la /var/www/html/
+echo "[debug] Contenido de /var/www/html/Pagina:"
+ls -la /var/www/html/Pagina/ 2>/dev/null || echo "[debug] ❌ Carpeta Pagina NO existe"
 
 # ─────────────────────────────────────────────────────────────
 # PASO 3: Arrancar Apache INMEDIATAMENTE
