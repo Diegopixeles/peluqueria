@@ -68,6 +68,12 @@ try {
           PRIMARY KEY (`id_mensaje`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
     ");
+
+    // Asegurarse de que reservas_web admite el estado 'finalizada'
+    $pdo->exec("
+        ALTER TABLE reservas_web 
+        MODIFY estado ENUM('pendiente','confirmada','cancelada','finalizada') NOT NULL DEFAULT 'pendiente';
+    ");
 } catch (PDOException $e) {
     // Ignoramos errores de creación si el usuario no tiene permisos en este momento,
     // ya que normalmente la tabla se creará en el despliegue con el archivo SQL.

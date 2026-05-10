@@ -134,7 +134,7 @@ CREATE TABLE IF NOT EXISTS `reservas_web` (
   `hora_inicio`    TIME NOT NULL,
   `id_servicio`    BIGINT UNSIGNED NOT NULL,
   `id_cliente_web` BIGINT UNSIGNED DEFAULT NULL,
-  `estado`         ENUM('pendiente','confirmada','cancelada') NOT NULL DEFAULT 'pendiente',
+  `estado`         ENUM('pendiente','confirmada','cancelada','finalizada') NOT NULL DEFAULT 'pendiente',
   `notas`          VARCHAR(255) DEFAULT NULL,
   `creado_en`      DATETIME NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id_reserva`),

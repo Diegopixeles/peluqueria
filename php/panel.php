@@ -28,14 +28,15 @@ if (isset($_GET['logout'])) {
 }
 
 // ====================================================
-// AUTO-BORRADO DE CITAS PASADAS
+// AUTO-ACTUALIZACIÓN DE CITAS PASADAS A "FINALIZADA"
 // ====================================================
-// Borra las reservas donde la hora actual es posterior a la hora de inicio + duración
+// En lugar de borrarlas, las citas cuya hora haya pasado se marcan como finalizadas.
 $pdo->exec("
-    DELETE rw
-    FROM reservas_web rw
+    UPDATE reservas_web rw
     JOIN servicios s ON rw.id_servicio = s.id_servicio
+    SET rw.estado = 'finalizada'
     WHERE TIMESTAMP(rw.fecha, rw.hora_inicio) < DATE_SUB(NOW(), INTERVAL s.duracion_minutos MINUTE)
+    AND rw.estado != 'finalizada'
 ");
 
 // ====================================================
@@ -97,14 +98,16 @@ $stmtListaServicios = $pdo->query(
 );
 $listaServicios = $stmtListaServicios->fetchAll();
 
-// Obtener los últimos 5 clientes registrados
-$stmtListaClientes = $pdo->query(
-    'SELECT nombre, apellidos, telefono, correo, fecha_alta
-     FROM clientes
-     ORDER BY fecha_alta DESC, id_cliente DESC
-     LIMIT 5'
+// Obtener el historial de las últimas 5 citas finalizadas
+$stmtHistorialCitas = $pdo->query(
+    "SELECT rw.nombre AS cliente_nombre, rw.fecha, rw.hora_inicio, s.nombre AS servicio_nombre
+     FROM reservas_web rw
+     JOIN servicios s ON rw.id_servicio = s.id_servicio
+     WHERE rw.estado = 'finalizada'
+     ORDER BY rw.fecha DESC, rw.hora_inicio DESC
+     LIMIT 5"
 );
-$listaClientes = $stmtListaClientes->fetchAll();
+$historialCitas = $stmtHistorialCitas->fetchAll();
 
 // Obtener los empleados activos
 $stmtListaEmpleados = $pdo->query(
@@ -370,20 +373,21 @@ try {
                 </div>
             </div>
 
-            <!-- TABLA: Últimos clientes registrados -->
+            <!-- TABLA: Historial de Citas Finalizadas -->
             <div class="bg-white rounded-2xl shadow overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-100 flex items-center">
-                    <i data-lucide="users" class="w-5 h-5 text-blue-500 mr-2"></i>
-                    <h2 class="text-lg font-bold text-gray-800">Últimos clientes</h2>
+                    <i data-lucide="check-circle" class="w-5 h-5 text-green-500 mr-2"></i>
+                    <h2 class="text-lg font-bold text-gray-800">Últimas citas finalizadas</h2>
                 </div>
                 <div class="divide-y divide-gray-100">
-                    <?php if (empty($listaClientes)): ?>
-                        <p class="px-6 py-4 text-center text-gray-400 text-sm">Sin clientes todavía</p>
+                    <?php if (empty($historialCitas)): ?>
+                        <p class="px-6 py-4 text-center text-gray-400 text-sm">No hay historial de citas</p>
                     <?php else: ?>
-                        <?php foreach ($listaClientes as $cliente): ?>
+                        <?php foreach ($historialCitas as $citaFin): ?>
                             <div class="px-6 py-4">
-                                <p class="font-semibold text-gray-900"><?php echo htmlspecialchars($cliente['nombre'] . ' ' . $cliente['apellidos']); ?></p>
-                                <p class="text-xs text-gray-500 mt-0.5">📞 <?php echo htmlspecialchars($cliente['telefono']); ?></p>
+                                <p class="font-semibold text-gray-900"><?php echo htmlspecialchars($citaFin['cliente_nombre']); ?></p>
+                                <p class="text-sm text-gray-600 mt-0.5"><?php echo htmlspecialchars($citaFin['servicio_nombre']); ?></p>
+                                <p class="text-xs text-gray-400 mt-1">📅 <?php echo date('d/m/Y', strtotime($citaFin['fecha'])); ?> a las <?php echo date('H:i', strtotime($citaFin['hora_inicio'])); ?></p>
                             </div>
                         <?php endforeach; ?>
                     <?php endif; ?>
