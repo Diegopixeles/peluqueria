@@ -185,37 +185,37 @@ if (empty($serviciosParaMostrar)) {
             <!-- Grid de 6 imágenes de galería (placeholder de colores) -->
             <div class="grid grid-cols-2 md:grid-cols-3 gap-4 rounded-xl overflow-hidden">
                 <div class="aspect-square overflow-hidden rounded-xl shadow-lg hover:opacity-75 transition duration-300 relative group">
-                    <img src="../peinados/corte femenino.webp" alt="Corte Femenino" class="object-cover w-full h-full">
+                    <img src="../peinados/corte femenino.png" alt="Corte Femenino" class="object-cover w-full h-full">
                     <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition flex items-center justify-center">
                         <span class="text-white font-bold text-lg opacity-0 group-hover:opacity-100 transition drop-shadow-md">Corte Femenino</span>
                     </div>
                 </div>
                 <div class="aspect-square overflow-hidden rounded-xl shadow-lg hover:opacity-75 transition duration-300 relative group">
-                    <img src="../peinados/corte de barba.webp" alt="Barbería Clásica" class="object-cover w-full h-full">
+                    <img src="../peinados/corte de barba.png" alt="Barbería Clásica" class="object-cover w-full h-full">
                     <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition flex items-center justify-center">
                         <span class="text-white font-bold text-lg opacity-0 group-hover:opacity-100 transition drop-shadow-md">Barbería Clásica</span>
                     </div>
                 </div>
                 <div class="aspect-square overflow-hidden rounded-xl shadow-lg hover:opacity-75 transition duration-300 relative group">
-                    <img src="../peinados/decoloración.webp" alt="Decoloraciones" class="object-cover w-full h-full">
+                    <img src="../peinados/decoloración.png" alt="Decoloraciones" class="object-cover w-full h-full">
                     <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition flex items-center justify-center">
                         <span class="text-white font-bold text-lg opacity-0 group-hover:opacity-100 transition drop-shadow-md">Decoloraciones</span>
                     </div>
                 </div>
                 <div class="aspect-square overflow-hidden rounded-xl shadow-lg hover:opacity-75 transition duration-300 relative group">
-                    <img src="../peinados/de evento.webp" alt="Peinado de Evento" class="object-cover w-full h-full">
+                    <img src="../peinados/de evento.png" alt="Peinado de Evento" class="object-cover w-full h-full">
                     <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition flex items-center justify-center">
                         <span class="text-white font-bold text-lg opacity-0 group-hover:opacity-100 transition drop-shadow-md">Peinado de Evento</span>
                     </div>
                 </div>
                 <div class="aspect-square overflow-hidden rounded-xl shadow-lg hover:opacity-75 transition duration-300 relative group">
-                    <img src="../peinados/corte masculino.webp" alt="Corte Masculino" class="object-cover w-full h-full">
+                    <img src="../peinados/corte masculino.png" alt="Corte Masculino" class="object-cover w-full h-full">
                     <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition flex items-center justify-center">
                         <span class="text-white font-bold text-lg opacity-0 group-hover:opacity-100 transition drop-shadow-md">Corte Masculino</span>
                     </div>
                 </div>
                 <div class="aspect-square overflow-hidden rounded-xl shadow-lg hover:opacity-75 transition duration-300 relative group">
-                    <img src="../peinados/trenzas.webp" alt="Trenzas" class="object-cover w-full h-full">
+                    <img src="../peinados/trenzas.png" alt="Trenzas" class="object-cover w-full h-full">
                     <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition flex items-center justify-center">
                         <span class="text-white font-bold text-lg opacity-0 group-hover:opacity-100 transition drop-shadow-md">Trenzas</span>
                     </div>
