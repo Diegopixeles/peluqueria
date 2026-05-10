@@ -20,18 +20,14 @@ require_once __DIR__ . '/../lib/PHPMailer/src/SMTP.php';
 
 // =============================================================
 //     CONFIGURACIÓN DE GMAIL SMTP
-//     Cambia estos valores con tu cuenta de Gmail.
-//     Importante: usa una "Contraseña de aplicación" de Google,
-//     NO tu contraseña normal. Pasos para obtenerla:
-//     1. Ir a myaccount.google.com → Seguridad
-//     2. Activar verificación en 2 pasos
-//     3. Buscar "Contraseñas de aplicaciones" → crear una nueva
 // =============================================================
-define('MAIL_HOST',     'smtp.gmail.com');
-define('MAIL_PORT',     587);
-define('MAIL_USERNAME', 'diegosanmiguelseco2006@gmail.com');        // Cambia esto
-define('MAIL_PASSWORD', 'pralgxipxpkddggy');        // Contrasena de aplicacion (16 chars)
-define('MAIL_FROM',     'diegosanmiguelseco2006@gmail.com');        // Mismo que username
+// Lee las credenciales de las variables de entorno (Railway)
+// Si no existen (ej. en local), usa las de por defecto.
+define('MAIL_HOST',     getenv('MAIL_HOST') ?: 'smtp.gmail.com');
+define('MAIL_PORT',     getenv('MAIL_PORT') ?: 587);
+define('MAIL_USERNAME', getenv('MAIL_USERNAME') ?: 'diegosanmiguelseco2006@gmail.com');
+define('MAIL_PASSWORD', getenv('MAIL_PASSWORD') ?: 'pralgxipxpkddggy'); 
+define('MAIL_FROM',     getenv('MAIL_FROM') ?: 'diegosanmiguelseco2006@gmail.com');
 define('MAIL_FROM_NAME','Peluquería tecnológica');
 
 require_once __DIR__ . '/../conexion.php';
