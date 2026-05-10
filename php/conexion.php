@@ -1,6 +1,5 @@
 <?php
 // =============================================================
-// ARCHIVO: conexion.php
 // DESCRIPCIÓN: Establece la conexión a la base de datos MySQL
 //              usando PDO (PHP Data Objects) para mayor seguridad.
 //              Este archivo debe ser incluido (require_once) en

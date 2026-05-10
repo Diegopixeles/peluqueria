@@ -1,6 +1,5 @@
 <?php
 // =============================================================
-// ARCHIVO: funciones.php
 // DESCRIPCIÓN: Define la variable $servicios (array de ejemplo),
 //              la función generarTarjetasServicios() que genera
 //              el HTML de las tarjetas, y la función 

@@ -1,6 +1,5 @@
 <?php
 // =============================================================
-// ARCHIVO: php/reservar.php
 // DESCRIPCIÓN: Página pública de reserva de citas.
 //              - Usuarios con sesión: ven su historial y datos precompletados.
 //              - Usuarios sin sesión: solo pueden reservar rellenando sus datos.

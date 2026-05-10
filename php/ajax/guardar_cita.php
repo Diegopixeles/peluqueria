@@ -1,6 +1,5 @@
 <?php
 // =============================================================
-// ARCHIVO: ajax/guardar_cita.php
 // DESCRIPCIÓN: Endpoint AJAX (POST). Valida los datos del
 //              formulario de reserva, guarda la cita en BD
 //              y envía email de confirmación con PHPMailer + Gmail.

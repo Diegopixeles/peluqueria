@@ -1,6 +1,5 @@
 <?php
 // =============================================================
-// ARCHIVO: panel.php
 // DESCRIPCIÓN: Panel de administración de la peluquería.
 //              Solo accesible tras haber iniciado sesión 
 //              correctamente en login.php.

@@ -1,6 +1,5 @@
 <?php
 // =============================================================
-// ARCHIVO: ajax/horas_disponibles.php
 // DESCRIPCIÓN: Endpoint AJAX (GET). Recibe `fecha` e `id_servicio`
 //              y devuelve un JSON con las franjas horarias del día,
 //              indicando cuáles están disponibles y cuáles ocupadas.

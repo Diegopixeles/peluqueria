@@ -1,6 +1,5 @@
 <?php
 // =============================================================
-// ARCHIVO: index.php
 // DESCRIPCIÓN: Página principal de la web de la peluquería.
 //              Debe ser un archivo .php (no .html) para que
 //              el servidor ejecute el código PHP embebido.

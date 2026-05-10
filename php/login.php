@@ -1,6 +1,5 @@
 <?php
 // =============================================================
-// ARCHIVO: login.php
 // DESCRIPCIÓN: Página de acceso al panel de administración.
 //              Autentica al usuario contra la tabla `usuarios`
 //              de la base de datos usando PDO y bcrypt.
