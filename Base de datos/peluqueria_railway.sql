@@ -1,5 +1,4 @@
 -- =============================================================
--- ARCHIVO: peluqueria_railway.sql
 -- USO: Importar en TablePlus conectado a Railway.
 --      Railway ya proporciona la base de datos, NO incluye
 --      CREATE DATABASE ni USE.
