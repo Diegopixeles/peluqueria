@@ -35,7 +35,7 @@ $pdo->exec("
     DELETE rw
     FROM reservas_web rw
     JOIN servicios s ON rw.id_servicio = s.id_servicio
-    WHERE CONCAT(rw.fecha, ' ', rw.hora_inicio) < NOW() - INTERVAL s.duracion_minutos MINUTE
+    WHERE TIMESTAMP(rw.fecha, rw.hora_inicio) < DATE_SUB(NOW(), INTERVAL s.duracion_minutos MINUTE)
 ");
 
 // ====================================================
@@ -117,6 +117,7 @@ $stmtProximasCitas = $pdo->query(
     "SELECT r.id_reserva, r.nombre AS cliente_nombre, r.telefono, r.fecha, r.hora_inicio, s.nombre AS servicio_nombre, s.duracion_minutos
      FROM reservas_web r
      JOIN servicios s ON r.id_servicio = s.id_servicio
+     WHERE TIMESTAMP(r.fecha, r.hora_inicio) >= DATE_SUB(NOW(), INTERVAL s.duracion_minutos MINUTE)
      ORDER BY r.fecha ASC, r.hora_inicio ASC
      LIMIT 15"
 );
