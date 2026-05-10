@@ -256,7 +256,7 @@ try {
                                 <tr class="hover:bg-gray-50 transition">
                                     <td class="px-4 py-3">
                                         <p class="font-medium text-gray-900"><?php echo htmlspecialchars($cita['cliente_nombre']); ?></p>
-                                        <p class="text-xs text-gray-500">📞 <?php echo htmlspecialchars($cita['telefono']); ?></p>
+                                        <p class="text-xs text-gray-500">📞 <?php echo htmlspecialchars($cita['telefono'] ?? ''); ?></p>
                                     </td>
                                     <td class="px-4 py-3 text-gray-700"><?php echo htmlspecialchars($cita['servicio_nombre']); ?></td>
                                     <td class="px-4 py-3 font-semibold text-gray-800">
