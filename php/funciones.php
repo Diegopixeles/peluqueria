@@ -179,12 +179,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         ⚠️ Por favor, introduce un correo electrónico válido.
                                    </div>';
         } else {
-            // Si todo es correcto, muestra mensaje de éxito
-            // En un entorno real aquí iría el código para enviar el email (mail() o PHPMailer)
-            // o para guardar el mensaje en la BD.
-            $mensaje_formulario = '<div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
-                                        ✅ ¡Gracias, ' . htmlspecialchars($nombre) . '! Tu mensaje ha sido recibido. Te contactaremos pronto.
-                                   </div>';
+            // Guardamos el mensaje en la BD usando la variable global $pdo
+            global $pdo;
+            if (isset($pdo)) {
+                try {
+                    $stmt = $pdo->prepare('INSERT INTO mensajes_contacto (nombre, email, mensaje) VALUES (?, ?, ?)');
+                    $stmt->execute([$nombre, $email, $mensaje]);
+                    $mensaje_formulario = '<div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+                                                ✅ ¡Gracias, ' . htmlspecialchars($nombre) . '! Tu mensaje ha sido recibido y guardado. Te contactaremos pronto.
+                                           </div>';
+                } catch (PDOException $e) {
+                    $mensaje_formulario = '<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                                                ⚠️ Hubo un error al guardar tu mensaje. Por favor, intenta de nuevo más tarde.
+                                           </div>';
+                }
+            } else {
+                 $mensaje_formulario = '<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                                            ⚠️ Error de conexión. No se pudo procesar tu mensaje.
+                                        </div>';
+            }
         }
     }
 }

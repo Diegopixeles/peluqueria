@@ -8,14 +8,14 @@
 //              procesa el formulario de contacto.
 // =============================================================
 
+// ---- Incluir la conexión a la BD ----
+// Crea la variable $pdo con la conexión activa.
+require_once __DIR__ . '/../php/conexion.php';
+
 // ---- Incluir funciones y lógica del formulario ----
 // Este archivo define: $servicios, generarTarjetasServicios(),
 // obtenerServiciosDB() y $mensaje_formulario.
 require_once __DIR__ . '/../php/funciones.php';
-
-// ---- Incluir la conexión a la BD ----
-// Crea la variable $pdo con la conexión activa.
-require_once __DIR__ . '/../php/conexion.php';
 
 // ---- Obtener los servicios desde la base de datos ----
 // Si la BD tiene datos, los usa. Si falla, usa el array de respaldo $servicios.

@@ -207,6 +207,17 @@ CREATE TABLE IF NOT EXISTS `usuarios` (
   UNIQUE KEY `uq_email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- ------------------------------------------------------------
+-- Tabla: mensajes_contacto (dudas enviadas desde la web)
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `mensajes_contacto` (
+  `id_mensaje` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `nombre` VARCHAR(160) NOT NULL,
+  `email` VARCHAR(160) NOT NULL,
+  `mensaje` TEXT NOT NULL,
+  `fecha_envio` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_mensaje`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- =============================================================
 -- 3. TRIGGERS (disparadores automáticos)

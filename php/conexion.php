@@ -53,4 +53,23 @@ try {
          </p>');
 }
 // A partir de aquí, la variable $pdo contiene una conexión activa y lista para usar.
+
+// ============================================================
+// AUTO-CREACIÓN DE TABLAS ADICIONALES (Para despliegue)
+// ============================================================
+try {
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS `mensajes_contacto` (
+          `id_mensaje` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+          `nombre` VARCHAR(160) NOT NULL,
+          `email` VARCHAR(160) NOT NULL,
+          `mensaje` TEXT NOT NULL,
+          `fecha_envio` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (`id_mensaje`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+    ");
+} catch (PDOException $e) {
+    // Ignoramos errores de creación si el usuario no tiene permisos en este momento,
+    // ya que normalmente la tabla se creará en el despliegue con el archivo SQL.
+}
 ?>

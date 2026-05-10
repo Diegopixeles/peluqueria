@@ -66,6 +66,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     throw $e;
                 }
             }
+        } elseif ($action === 'borrar_mensaje') {
+            $stmt = $pdo->prepare('DELETE FROM mensajes_contacto WHERE id_mensaje = ?');
+            $stmt->execute([$_POST['id_mensaje']]);
         }
         // Redirigir para evitar reenvío de formulario al recargar
         header('Location: panel.php');
@@ -122,6 +125,19 @@ $stmtProximasCitas = $pdo->query(
      LIMIT 15"
 );
 $proximasCitas = $stmtProximasCitas->fetchAll();
+
+// Obtener mensajes de contacto
+try {
+    $stmtMensajes = $pdo->query(
+        "SELECT id_mensaje, nombre, email, mensaje, fecha_envio
+         FROM mensajes_contacto
+         ORDER BY fecha_envio DESC"
+    );
+    $listaMensajes = $stmtMensajes->fetchAll();
+} catch (PDOException $e) {
+    // Si la tabla aún no existe, devuelve array vacío
+    $listaMensajes = [];
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -250,6 +266,43 @@ $proximasCitas = $stmtProximasCitas->fetchAll();
                         <?php endif; ?>
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: MENSAJES DE CONTACTO -->
+        <div class="bg-white rounded-2xl shadow overflow-hidden mb-8 border border-amber-100">
+            <div class="px-6 py-4 border-b border-amber-100 flex items-center bg-amber-50">
+                <i data-lucide="mail" class="w-5 h-5 text-amber-500 mr-2"></i>
+                <h2 class="text-lg font-bold text-gray-800">Mensajes y Dudas de Clientes</h2>
+            </div>
+            <div class="divide-y divide-gray-100">
+                <?php if (empty($listaMensajes)): ?>
+                    <p class="px-6 py-8 text-center text-gray-400">No hay mensajes nuevos.</p>
+                <?php else: ?>
+                    <?php foreach ($listaMensajes as $msj): ?>
+                        <div class="px-6 py-4 flex flex-col sm:flex-row justify-between items-start hover:bg-gray-50 transition">
+                            <div class="mb-3 sm:mb-0">
+                                <div class="flex items-baseline space-x-2">
+                                    <h4 class="font-bold text-gray-900"><?php echo htmlspecialchars($msj['nombre']); ?></h4>
+                                    <a href="mailto:<?php echo htmlspecialchars($msj['email']); ?>" class="text-sm text-blue-600 hover:underline">
+                                        <?php echo htmlspecialchars($msj['email']); ?>
+                                    </a>
+                                </div>
+                                <p class="text-xs text-gray-400 mt-1 mb-2">Recibido: <?php echo htmlspecialchars($msj['fecha_envio']); ?></p>
+                                <p class="text-gray-700 text-sm bg-gray-100 p-3 rounded-lg border border-gray-200"><?php echo nl2br(htmlspecialchars($msj['mensaje'])); ?></p>
+                            </div>
+                            <div class="ml-0 sm:ml-4 flex-shrink-0 mt-2 sm:mt-0">
+                                <form method="POST" action="panel.php" onsubmit="return confirm('¿Borrar definitivamente este mensaje?');">
+                                    <input type="hidden" name="action" value="borrar_mensaje">
+                                    <input type="hidden" name="id_mensaje" value="<?php echo $msj['id_mensaje']; ?>">
+                                    <button type="submit" class="flex items-center text-xs font-medium text-red-600 hover:text-red-800 px-3 py-1.5 border border-red-200 rounded-md hover:bg-red-50 transition">
+                                        <i data-lucide="trash-2" class="w-3.5 h-3.5 mr-1"></i> Borrar
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </div>
         </div>
 
