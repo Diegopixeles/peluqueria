@@ -8,59 +8,91 @@
 // =============================================================
 
 // ---- Iniciar sesión PHP ----
-// Necesario para poder leer $_SESSION y verificar si el usuario está logueado.
 session_start();
 
 // ---- Protección de acceso ----
-// Si no hay sesión activa (usuario no logueado), redirige al login.
-// Esto evita que alguien acceda directamente a esta URL sin haberse autenticado.
 if (empty($_SESSION['usuario_id'])) {
     header('Location: login.php');
-    exit(); // Detener ejecución tras la redirección
+    exit();
 }
 
 // ---- Incluir la conexión a la base de datos ----
 require_once __DIR__ . '/conexion.php';
 
 // ---- Manejar el Cierre de Sesión (Logout) ----
-// Si se recibe el parámetro ?logout=1 en la URL, se cierra la sesión.
 if (isset($_GET['logout'])) {
-    session_unset();    // Borra todas las variables de sesión
-    session_destroy();  // Destruye la sesión completamente
-    header('Location: login.php'); // Redirige al login
+    session_unset();
+    session_destroy();
+    header('Location: login.php');
     exit();
 }
 
+// ====================================================
+// AUTO-BORRADO DE CITAS PASADAS
+// ====================================================
+// Borra las reservas donde la hora actual es posterior a la hora de inicio + duración
+$pdo->exec("
+    DELETE rw
+    FROM reservas_web rw
+    JOIN servicios s ON rw.id_servicio = s.id_servicio
+    WHERE CONCAT(rw.fecha, ' ', rw.hora_inicio) < NOW() - INTERVAL s.duracion_minutos MINUTE
+");
 
 // ====================================================
-// CONSULTAS A LA BASE DE DATOS para las estadísticas
+// MANEJO DE CRUD DE SERVICIOS
+// ====================================================
+$error_mensaje = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    $action = $_POST['action'];
+    try {
+        if ($action === 'crear_servicio') {
+            $stmt = $pdo->prepare('INSERT INTO servicios (nombre, descripcion, precio, duracion_minutos, activo) VALUES (?, ?, ?, ?, 1)');
+            $stmt->execute([$_POST['nombre'], $_POST['descripcion'], $_POST['precio'], $_POST['duracion_minutos']]);
+        } elseif ($action === 'editar_servicio') {
+            $stmt = $pdo->prepare('UPDATE servicios SET nombre = ?, descripcion = ?, precio = ?, duracion_minutos = ? WHERE id_servicio = ?');
+            $stmt->execute([$_POST['nombre'], $_POST['descripcion'], $_POST['precio'], $_POST['duracion_minutos'], $_POST['id_servicio']]);
+        } elseif ($action === 'borrar_servicio') {
+            try {
+                // Intentar borrado físico
+                $stmt = $pdo->prepare('DELETE FROM servicios WHERE id_servicio = ?');
+                $stmt->execute([$_POST['id_servicio']]);
+            } catch (PDOException $e) {
+                // 23000 = constraint violation (está siendo usado en citas)
+                if ($e->getCode() == '23000') {
+                    // Borrado lógico (desactivar)
+                    $stmt = $pdo->prepare('UPDATE servicios SET activo = 0 WHERE id_servicio = ?');
+                    $stmt->execute([$_POST['id_servicio']]);
+                } else {
+                    throw $e;
+                }
+            }
+        }
+        // Redirigir para evitar reenvío de formulario al recargar
+        header('Location: panel.php');
+        exit();
+    } catch (Exception $e) {
+        $error_mensaje = "Error: " . $e->getMessage();
+    }
+}
+
+// ====================================================
+// CONSULTAS A LA BASE DE DATOS
 // ====================================================
 
-// Obtener el total de servicios activos
-$stmtServicios = $pdo->query('SELECT COUNT(*) FROM servicios WHERE activo = 1');
-$totalServicios = $stmtServicios->fetchColumn(); // fetchColumn() devuelve el valor de la primera columna
+// Obtener totales
+$totalServicios = $pdo->query('SELECT COUNT(*) FROM servicios WHERE activo = 1')->fetchColumn();
+$totalClientes = $pdo->query('SELECT COUNT(*) FROM clientes')->fetchColumn();
+$totalEmpleados = $pdo->query('SELECT COUNT(*) FROM empleados WHERE activo = 1')->fetchColumn();
+$totalCitas = $pdo->query('SELECT COUNT(*) FROM reservas_web')->fetchColumn(); // Actualizado para contar reservas_web en vez de la tabla compleja 'citas' si se usa reservas_web
 
-// Obtener el total de clientes registrados
-$stmtClientes = $pdo->query('SELECT COUNT(*) FROM clientes');
-$totalClientes = $stmtClientes->fetchColumn();
-
-// Obtener el total de empleados activos
-$stmtEmpleados = $pdo->query('SELECT COUNT(*) FROM empleados WHERE activo = 1');
-$totalEmpleados = $stmtEmpleados->fetchColumn();
-
-// Obtener el total de citas (de todos los estados)
-$stmtCitas = $pdo->query('SELECT COUNT(*) FROM citas');
-$totalCitas = $stmtCitas->fetchColumn();
-
-// Obtener los servicios con su precio y duración (los 8 primeros activos)
+// Obtener TODOS los servicios activos
 $stmtListaServicios = $pdo->query(
-    'SELECT nombre, descripcion, precio, duracion_minutos
+    'SELECT id_servicio, nombre, descripcion, precio, duracion_minutos
      FROM servicios
      WHERE activo = 1
-     ORDER BY nombre
-     LIMIT 8'
+     ORDER BY nombre'
 );
-$listaServicios = $stmtListaServicios->fetchAll(); // fetchAll() devuelve todas las filas
+$listaServicios = $stmtListaServicios->fetchAll();
 
 // Obtener los últimos 5 clientes registrados
 $stmtListaClientes = $pdo->query(
@@ -79,6 +111,16 @@ $stmtListaEmpleados = $pdo->query(
      ORDER BY nombre'
 );
 $listaEmpleados = $stmtListaEmpleados->fetchAll();
+
+// Obtener próximas citas
+$stmtProximasCitas = $pdo->query(
+    "SELECT r.id_reserva, r.nombre AS cliente_nombre, r.telefono, r.fecha, r.hora_inicio, s.nombre AS servicio_nombre, s.duracion_minutos
+     FROM reservas_web r
+     JOIN servicios s ON r.id_servicio = s.id_servicio
+     ORDER BY r.fecha ASC, r.hora_inicio ASC
+     LIMIT 15"
+);
+$proximasCitas = $stmtProximasCitas->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -87,30 +129,25 @@ $listaEmpleados = $stmtListaEmpleados->fetchAll();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Administración | Peluquería tecnológica</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Fuente Inter de Google Fonts -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
         body { font-family: 'Inter', sans-serif; }
+        
+        /* Utilidad para modales ocultos */
+        .modal-hidden { display: none !important; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
 
-    <!-- ====================================== -->
-    <!-- BARRA DE NAVEGACIÓN SUPERIOR DEL PANEL -->
-    <!-- ====================================== -->
+    <!-- BARRA DE NAVEGACIÓN -->
     <nav class="bg-gray-900 text-white shadow-lg">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-
-            <!-- Logo y nombre del panel -->
             <a href="panel.php" class="flex items-center space-x-2 min-w-0">
                 <i data-lucide="scissors-square" class="w-7 h-7 text-amber-500 flex-shrink-0"></i>
                 <span class="text-lg sm:text-xl font-bold truncate">Peluquería tecnológica</span>
                 <span class="text-gray-400 text-sm ml-2 hidden sm:inline">— Panel Admin</span>
             </a>
-
-            <!-- Información del usuario logueado y botón de logout -->
             <div class="flex items-center space-x-4">
-                <!-- Muestra el nombre del usuario guardado en la sesión -->
                 <span class="text-gray-300 text-sm hidden sm:block">
                     <i data-lucide="user-circle" class="w-4 h-4 inline mr-1"></i>
                     <?php echo htmlspecialchars($_SESSION['usuario_nombre']); ?>
@@ -118,7 +155,6 @@ $listaEmpleados = $stmtListaEmpleados->fetchAll();
                         <?php echo htmlspecialchars(strtoupper($_SESSION['usuario_rol'])); ?>
                     </span>
                 </span>
-                <!-- Botón de cerrar sesión: añade ?logout=1 a la URL -->
                 <a href="panel.php?logout=1"
                    class="flex items-center px-3 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-sm font-medium transition"
                    onclick="return confirm('¿Seguro que quieres cerrar sesión?')">
@@ -129,12 +165,15 @@ $listaEmpleados = $stmtListaEmpleados->fetchAll();
         </div>
     </nav>
 
-    <!-- ============================== -->
-    <!-- CONTENIDO PRINCIPAL DEL PANEL  -->
-    <!-- ============================== -->
+    <!-- CONTENIDO PRINCIPAL -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        <!-- Mensaje de bienvenida personalizado con el nombre de la sesión -->
+        <?php if ($error_mensaje): ?>
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                <span class="block sm:inline"><?php echo htmlspecialchars($error_mensaje); ?></span>
+            </div>
+        <?php endif; ?>
+
         <div class="mb-8">
             <h1 class="text-3xl font-extrabold text-gray-900">
                 ¡Bienvenido, <?php echo htmlspecialchars($_SESSION['usuario_nombre']); ?>! 👋
@@ -142,68 +181,91 @@ $listaEmpleados = $stmtListaEmpleados->fetchAll();
             <p class="text-gray-500 mt-1">Aquí tienes el resumen de la peluquería en tiempo real.</p>
         </div>
 
-        <!-- ========================= -->
-        <!-- TARJETAS DE ESTADÍSTICAS  -->
-        <!-- ========================= -->
+        <!-- TARJETAS DE ESTADÍSTICAS -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-
-            <!-- Tarjeta: Total de Clientes -->
             <div class="bg-white rounded-2xl shadow p-6 flex items-center space-x-4">
-                <div class="bg-blue-100 p-3 rounded-xl">
-                    <i data-lucide="users" class="w-7 h-7 text-blue-600"></i>
-                </div>
+                <div class="bg-blue-100 p-3 rounded-xl"><i data-lucide="users" class="w-7 h-7 text-blue-600"></i></div>
                 <div>
                     <p class="text-sm text-gray-500">Clientes</p>
-                    <!-- Muestra el valor obtenido de la consulta COUNT(*) -->
                     <p class="text-3xl font-extrabold text-gray-900"><?php echo $totalClientes; ?></p>
                 </div>
             </div>
-
-            <!-- Tarjeta: Total de Empleados activos -->
             <div class="bg-white rounded-2xl shadow p-6 flex items-center space-x-4">
-                <div class="bg-green-100 p-3 rounded-xl">
-                    <i data-lucide="user-check" class="w-7 h-7 text-green-600"></i>
-                </div>
+                <div class="bg-green-100 p-3 rounded-xl"><i data-lucide="user-check" class="w-7 h-7 text-green-600"></i></div>
                 <div>
                     <p class="text-sm text-gray-500">Empleados</p>
                     <p class="text-3xl font-extrabold text-gray-900"><?php echo $totalEmpleados; ?></p>
                 </div>
             </div>
-
-            <!-- Tarjeta: Total de Servicios activos -->
             <div class="bg-white rounded-2xl shadow p-6 flex items-center space-x-4">
-                <div class="bg-amber-100 p-3 rounded-xl">
-                    <i data-lucide="scissors" class="w-7 h-7 text-amber-600"></i>
-                </div>
+                <div class="bg-amber-100 p-3 rounded-xl"><i data-lucide="scissors" class="w-7 h-7 text-amber-600"></i></div>
                 <div>
                     <p class="text-sm text-gray-500">Servicios</p>
                     <p class="text-3xl font-extrabold text-gray-900"><?php echo $totalServicios; ?></p>
                 </div>
             </div>
-
-            <!-- Tarjeta: Total de Citas -->
             <div class="bg-white rounded-2xl shadow p-6 flex items-center space-x-4">
-                <div class="bg-purple-100 p-3 rounded-xl">
-                    <i data-lucide="calendar-check" class="w-7 h-7 text-purple-600"></i>
-                </div>
+                <div class="bg-purple-100 p-3 rounded-xl"><i data-lucide="calendar-check" class="w-7 h-7 text-purple-600"></i></div>
                 <div>
-                    <p class="text-sm text-gray-500">Citas</p>
+                    <p class="text-sm text-gray-500">Citas Pendientes</p>
                     <p class="text-3xl font-extrabold text-gray-900"><?php echo $totalCitas; ?></p>
                 </div>
             </div>
         </div>
 
+        <!-- SECCIÓN: PRÓXIMAS CITAS -->
+        <div class="bg-white rounded-2xl shadow overflow-hidden mb-8">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center">
+                <i data-lucide="clock" class="w-5 h-5 text-purple-500 mr-2"></i>
+                <h2 class="text-lg font-bold text-gray-800">Próximas Citas (Se borran automáticamente al terminar)</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-gray-50 text-gray-500 uppercase text-xs">
+                        <tr>
+                            <th class="px-4 py-3">Cliente</th>
+                            <th class="px-4 py-3">Servicio</th>
+                            <th class="px-4 py-3">Fecha y Hora</th>
+                            <th class="px-4 py-3 text-right">Duración</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <?php if (empty($proximasCitas)): ?>
+                            <tr><td colspan="4" class="px-4 py-4 text-center text-gray-400">No hay citas próximas.</td></tr>
+                        <?php else: ?>
+                            <?php foreach ($proximasCitas as $cita): ?>
+                                <tr class="hover:bg-gray-50 transition">
+                                    <td class="px-4 py-3">
+                                        <p class="font-medium text-gray-900"><?php echo htmlspecialchars($cita['cliente_nombre']); ?></p>
+                                        <p class="text-xs text-gray-500">📞 <?php echo htmlspecialchars($cita['telefono']); ?></p>
+                                    </td>
+                                    <td class="px-4 py-3 text-gray-700"><?php echo htmlspecialchars($cita['servicio_nombre']); ?></td>
+                                    <td class="px-4 py-3 font-semibold text-gray-800">
+                                        <?php echo htmlspecialchars($cita['fecha']); ?> - <?php echo htmlspecialchars(substr($cita['hora_inicio'], 0, 5)); ?>
+                                    </td>
+                                    <td class="px-4 py-3 text-right text-gray-500"><?php echo htmlspecialchars($cita['duracion_minutos']); ?> min</td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-        <!-- ================================================ -->
-        <!-- GRID INFERIOR: SERVICIOS + CLIENTES + EMPLEADOS  -->
-        <!-- ================================================ -->
+        <!-- GRID INFERIOR: SERVICIOS + CLIENTES + EMPLEADOS -->
         <div class="grid lg:grid-cols-3 gap-6">
 
-            <!-- ---- TABLA: Servicios disponibles ---- -->
-            <div class="bg-white rounded-2xl shadow overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-100 flex items-center">
-                    <i data-lucide="list" class="w-5 h-5 text-amber-500 mr-2"></i>
-                    <h2 class="text-lg font-bold text-gray-800">Servicios activos</h2>
+            <!-- TABLA: Servicios disponibles con CRUD -->
+            <div class="bg-white rounded-2xl shadow overflow-hidden lg:col-span-2">
+                <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <div class="flex items-center">
+                        <i data-lucide="list" class="w-5 h-5 text-amber-500 mr-2"></i>
+                        <h2 class="text-lg font-bold text-gray-800">Servicios activos</h2>
+                    </div>
+                    <!-- Botón para añadir servicio -->
+                    <button onclick="abrirModalServicio()" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded text-sm font-bold flex items-center transition">
+                        <i data-lucide="plus" class="w-4 h-4 mr-1"></i> Añadir
+                    </button>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm text-left">
@@ -212,28 +274,39 @@ $listaEmpleados = $stmtListaEmpleados->fetchAll();
                                 <th class="px-4 py-3">Servicio</th>
                                 <th class="px-4 py-3 text-right">Precio</th>
                                 <th class="px-4 py-3 text-right">Min</th>
+                                <th class="px-4 py-3 text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             <?php if (empty($listaServicios)): ?>
-                                <!-- Mensaje si no hay servicios en la BD -->
-                                <tr>
-                                    <td colspan="3" class="px-4 py-4 text-center text-gray-400">
-                                        Sin servicios en la BD
-                                    </td>
-                                </tr>
+                                <tr><td colspan="4" class="px-4 py-4 text-center text-gray-400">Sin servicios en la BD</td></tr>
                             <?php else: ?>
-                                <!-- Recorre cada servicio obtenido de la BD -->
                                 <?php foreach ($listaServicios as $servicio): ?>
                                     <tr class="hover:bg-gray-50 transition">
                                         <td class="px-4 py-3 font-medium text-gray-900">
                                             <?php echo htmlspecialchars($servicio['nombre']); ?>
+                                            <p class="text-xs text-gray-500 font-normal"><?php echo htmlspecialchars(substr($servicio['descripcion'], 0, 50)); ?>...</p>
                                         </td>
                                         <td class="px-4 py-3 text-right text-green-700 font-semibold">
                                             <?php echo number_format($servicio['precio'], 2, ',', '.'); ?> €
                                         </td>
                                         <td class="px-4 py-3 text-right text-gray-500">
                                             <?php echo $servicio['duracion_minutos']; ?>
+                                        </td>
+                                        <td class="px-4 py-3 text-center">
+                                            <!-- Botón Editar -->
+                                            <button onclick='abrirModalServicio(<?php echo json_encode($servicio); ?>)' class="text-blue-600 hover:text-blue-800 p-1 rounded transition" title="Editar">
+                                                <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                            </button>
+                                            
+                                            <!-- Formulario para Borrar -->
+                                            <form method="POST" action="panel.php" class="inline-block" onsubmit="return confirm('¿Seguro que deseas eliminar este servicio? Si ya tiene citas, se marcará como inactivo.');">
+                                                <input type="hidden" name="action" value="borrar_servicio">
+                                                <input type="hidden" name="id_servicio" value="<?php echo $servicio['id_servicio']; ?>">
+                                                <button type="submit" class="text-red-600 hover:text-red-800 p-1 rounded transition" title="Borrar">
+                                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                                </button>
+                                            </form>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -243,7 +316,7 @@ $listaEmpleados = $stmtListaEmpleados->fetchAll();
                 </div>
             </div>
 
-            <!-- ---- TABLA: Últimos clientes registrados ---- -->
+            <!-- TABLA: Últimos clientes registrados -->
             <div class="bg-white rounded-2xl shadow overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-100 flex items-center">
                     <i data-lucide="users" class="w-5 h-5 text-blue-500 mr-2"></i>
@@ -251,61 +324,12 @@ $listaEmpleados = $stmtListaEmpleados->fetchAll();
                 </div>
                 <div class="divide-y divide-gray-100">
                     <?php if (empty($listaClientes)): ?>
-                        <!-- Mensaje si no hay clientes en la BD -->
                         <p class="px-6 py-4 text-center text-gray-400 text-sm">Sin clientes todavía</p>
                     <?php else: ?>
                         <?php foreach ($listaClientes as $cliente): ?>
                             <div class="px-6 py-4">
-                                <!-- Nombre y apellidos del cliente -->
-                                <p class="font-semibold text-gray-900">
-                                    <?php echo htmlspecialchars($cliente['nombre'] . ' ' . $cliente['apellidos']); ?>
-                                </p>
-                                <!-- Teléfono y correo -->
-                                <p class="text-xs text-gray-500 mt-0.5">
-                                    📞 <?php echo htmlspecialchars($cliente['telefono']); ?>
-                                    <?php if ($cliente['correo']): ?>
-                                        · ✉️ <?php echo htmlspecialchars($cliente['correo']); ?>
-                                    <?php endif; ?>
-                                </p>
-                                <!-- Fecha de alta del cliente -->
-                                <p class="text-xs text-gray-400 mt-0.5">
-                                    Alta: <?php echo htmlspecialchars($cliente['fecha_alta']); ?>
-                                </p>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </div>
-            </div>
-
-            <!-- ---- TABLA: Empleados activos ---- -->
-            <div class="bg-white rounded-2xl shadow overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-100 flex items-center">
-                    <i data-lucide="user-check" class="w-5 h-5 text-green-500 mr-2"></i>
-                    <h2 class="text-lg font-bold text-gray-800">Empleados</h2>
-                </div>
-                <div class="divide-y divide-gray-100">
-                    <?php if (empty($listaEmpleados)): ?>
-                        <!-- Mensaje si no hay empleados en la BD -->
-                        <p class="px-6 py-4 text-center text-gray-400 text-sm">Sin empleados registrados</p>
-                    <?php else: ?>
-                        <?php foreach ($listaEmpleados as $empleado): ?>
-                            <div class="px-6 py-4 flex items-center space-x-3">
-                                <!-- Avatar con la inicial del nombre -->
-                                <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
-                                    <span class="text-amber-600 font-bold text-sm">
-                                        <?php echo mb_strtoupper(mb_substr($empleado['nombre'], 0, 1)); ?>
-                                    </span>
-                                </div>
-                                <div>
-                                    <!-- Nombre completo del empleado -->
-                                    <p class="font-semibold text-gray-900 text-sm">
-                                        <?php echo htmlspecialchars($empleado['nombre'] . ' ' . $empleado['apellidos']); ?>
-                                    </p>
-                                    <!-- Puesto del empleado con la primera letra en mayúscula -->
-                                    <p class="text-xs text-gray-500">
-                                        <?php echo htmlspecialchars(ucfirst($empleado['puesto'])); ?>
-                                    </p>
-                                </div>
+                                <p class="font-semibold text-gray-900"><?php echo htmlspecialchars($cliente['nombre'] . ' ' . $cliente['apellidos']); ?></p>
+                                <p class="text-xs text-gray-500 mt-0.5">📞 <?php echo htmlspecialchars($cliente['telefono']); ?></p>
                             </div>
                         <?php endforeach; ?>
                     <?php endif; ?>
@@ -314,22 +338,97 @@ $listaEmpleados = $stmtListaEmpleados->fetchAll();
 
         </div><!-- Fin del grid -->
 
-        <!-- Enlace para volver a la página pública -->
         <div class="mt-8 text-center">
-            <a href="/"
-               class="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 transition">
-                <i data-lucide="arrow-left" class="w-4 h-4 mr-1"></i>
-                Ver página web pública
+            <a href="/" class="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 transition">
+                <i data-lucide="arrow-left" class="w-4 h-4 mr-1"></i> Ver página web pública
             </a>
         </div>
 
-    </main><!-- Fin del main -->
+    </main>
+
+    <!-- ============================================== -->
+    <!-- MODAL PARA CREAR / EDITAR SERVICIOS            -->
+    <!-- ============================================== -->
+    <div id="modalServicio" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 modal-hidden backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md m-4 transform scale-100 transition-transform">
+            <div class="flex justify-between items-center mb-5">
+                <h3 id="modalServicioTitulo" class="text-xl font-bold text-gray-900">Añadir Servicio</h3>
+                <button onclick="cerrarModalServicio()" class="text-gray-400 hover:text-gray-700 transition">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <form id="formServicio" method="POST" action="panel.php">
+                <input type="hidden" name="action" id="modalAction" value="crear_servicio">
+                <input type="hidden" name="id_servicio" id="modalIdServicio" value="">
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                        <input type="text" name="nombre" id="modalNombre" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-amber-500 focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                        <textarea name="descripcion" id="modalDescripcion" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-amber-500 focus:border-amber-500"></textarea>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Precio (€)</label>
+                            <input type="number" step="0.01" name="precio" id="modalPrecio" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-amber-500 focus:border-amber-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Duración (min)</label>
+                            <input type="number" name="duracion_minutos" id="modalDuracion" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-amber-500 focus:border-amber-500">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" onclick="cerrarModalServicio()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-amber-500 hover:bg-amber-600 rounded-lg transition">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- Librería de iconos Lucide -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>
-        // Inicializar todos los iconos data-lucide del DOM
         lucide.createIcons();
+
+        // Lógica del Modal de Servicios
+        const modal = document.getElementById('modalServicio');
+        const titulo = document.getElementById('modalServicioTitulo');
+        const inputAction = document.getElementById('modalAction');
+        const inputId = document.getElementById('modalIdServicio');
+        const inputNombre = document.getElementById('modalNombre');
+        const inputDesc = document.getElementById('modalDescripcion');
+        const inputPrecio = document.getElementById('modalPrecio');
+        const inputDuracion = document.getElementById('modalDuracion');
+
+        function abrirModalServicio(servicio = null) {
+            if (servicio) {
+                // Modo Editar
+                titulo.innerText = "Editar Servicio";
+                inputAction.value = "editar_servicio";
+                inputId.value = servicio.id_servicio;
+                inputNombre.value = servicio.nombre;
+                inputDesc.value = servicio.descripcion;
+                inputPrecio.value = servicio.precio;
+                inputDuracion.value = servicio.duracion_minutos;
+            } else {
+                // Modo Crear
+                titulo.innerText = "Añadir Servicio";
+                inputAction.value = "crear_servicio";
+                inputId.value = "";
+                document.getElementById('formServicio').reset();
+            }
+            modal.classList.remove('modal-hidden');
+        }
+
+        function cerrarModalServicio() {
+            modal.classList.add('modal-hidden');
+        }
     </script>
 </body>
 </html>
